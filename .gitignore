@@ -1,0 +1,11 @@
+*.db
+*.spec
+*.png
+*.log
+*.xlsx
+*.pdf
+venv/
+__pycache__/
+.vscode/
+dist/
+build/
