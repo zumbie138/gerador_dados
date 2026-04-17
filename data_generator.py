@@ -47,36 +47,37 @@ class DataGenerator:
             return (datetime.strptime(hora_calculada, '%H:%M:%S') - timedelta(minutes=minutos, seconds=segundos))
         elif isinstance(hora_calculada, datetime):
             return (hora_calculada + timedelta(minutes=minutos, seconds=segundos))
+    
+    def _adicionar_dados(self, evento, camara, data, hora, usuario, trilho, valvula, temperatura, pressao):
+        self.dados.append({
+            'Evento': evento,
+            'Data': f'{data}',
+            'Hora': f'{hora}',
+            'Câmara': camara, 
+            'Usuário': usuario,
+            'trilho': trilho,
+            'Válvula': valvula,
+            'Temperatura (°C)': temperatura,
+            'Pressão (bar)': pressao
+        })
         
     def ciclo_inicial(self):
         hora_ligamento = self._calcular_hora(self.hora, 0, 39)
-        self.dados.append({
-            'Evento': f'CARREGOU A {self.receita} NA {self.camara}',
-            'Data': f'{self.data}',
-            'Hora': f'{hora_ligamento.time()}',
-            'Câmara': self.camara, 
-            'Usuário': 'gq',
-            'trilho': None,
-            'Válvula': None,
-            'Temperatura (°C)': None,
-            'Pressão (bar)': None
-        })
+        self._adicionar_dados(
+           f'CARREGOU A {self.receita} NA {self.camara}',
+           self.camara, self.data, hora_ligamento.time(),
+            'gq', None, None, None, None
+        )
         valvulas = self.camara_valvulas[self.camara]
         for i in range(valvulas[0]):
             valv = valvulas[1] + i
             segundo_acionameto = random.randint(11, 50)
             hora_ligamento = self._calcular_hora(hora_ligamento, 0, segundo_acionameto)
-            self.dados.append({
-                'Evento': f'HABILITOU PROCESSO: {self.camara} - VALV{valv}, {self.receita}',
-                'Data': f'{self.data}',
-                'Hora': f'{hora_ligamento.time()}',
-                'Câmara': self.camara, 
-                'Usuário': 'gq',
-                'trilho': f'Trilho {i+1}',
-                'Válvula': f'V{valv}',
-                'Temperatura (°C)': None,
-                'Pressão (bar)':None
-            })
+            self._adicionar_dados(
+                f'HABILITOU PROCESSO: {self.camara} - VALV{valv}, {self.receita}',
+                self.camara, self.data, hora_ligamento.time(), 'gq',
+                f'Trilho {i+1}', f'V{valv}', None, None
+            )
         segundo_acionameto = random.randint(11, 50)
         self.hora_ciclo = self._calcular_hora(hora_ligamento, 0, segundo_acionameto)
     
@@ -86,17 +87,11 @@ class DataGenerator:
             trilho, valvula, segundo_acionamento, temperatura, pressao = self._gerar_dados_aleatorios()
             hora = self._calcular_hora(self.hora_ciclo, 0, segundo_acionamento)
             self.hora_ciclo = self._calcular_hora(self.hora_ciclo, 3, 0)
-            self.dados.append({
-                'Evento': f'TEMPERATURA = {temperatura:.1f}°C, PRESSÃO = {pressao:.1f} bar',
-                'Data': f'{self.data}',
-                'Hora': f'{hora.time()}',
-                'Câmara': self.camara,
-                'Usuário': 'SISTEMA',
-                'trilho': f'Trilho {trilho}',
-                'Válvula': f'V{valvula}',
-                'Temperatura (°C)': f'{temperatura:.2f}',
-                'Pressão (bar)': f'{pressao:.2f}'
-            })
+            self._adicionar_dados(
+                f'TEMPERATURA = {temperatura:.1f}°C, PRESSÃO = {pressao:.1f} bar',
+                self.camara, self.data, hora.time(), 'SISTEMA', f'Trilho {trilho}',
+                f'V{valvula}', f'{temperatura:.2f}', f'{pressao:.2f}'
+            )
     
     def ciclo_encerramento(self):
         valvulas = self.camara_valvulas[self.camara]
@@ -105,15 +100,9 @@ class DataGenerator:
             _, valvula, segundo_acionamento, *_ = self._gerar_dados_aleatorios()
             valv_num = valvulas[1] + i
             hora = self._calcular_hora(hora, 0, segundo_acionamento) 
-            self.dados.append({
-                'Evento': f'DESABILITOU PROCESSO: {self.camara}- VALV{valv_num},  {self.receita}',
-                'Data': f'{self.data}',
-                'Hora': f'{hora.time()}',
-                'Câmara': self.camara,
-                'Usuário': 'SISTEMA',
-                'trilho': f'Trilho {i+1}',
-                'Válvula': f'V{valvula}',
-                'Temperatura (°C)': None,
-                'Pressão (bar)': None
-            })
+            self._adicionar_dados(
+                f'DESABILITOU PROCESSO: {self.camara}- VALV{valv_num},  {self.receita}',
+                self.camara, self.data, hora.time(), 'SISTEMA', f'Trilho {i+1}',
+                f'V{valvula}', None, None
+            )
             
