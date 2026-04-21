@@ -10,3 +10,4 @@ __pycache__/
 dist/
 build/
 build_exe.py
+extrair_imagem.py

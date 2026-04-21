@@ -1,18 +1,43 @@
 from data_generator import DataGenerator
 from database import Database
-from interface import MenuInterface
+from interface import MainController
 from pdf_output import RelatorioPDF
 from log_message import ErrorLogging
+from header_data import HeaderData
+from typing import List
+import pandas as pd
 
 class Application:
     def __init__(self):
         log = ErrorLogging()
         self.logger = log.setup_logging()
-        self.interface = MenuInterface(self.on_generate_report, self.logger)
+        self.interface = MainController(logger=self.logger)
         self.db = Database(self.logger)
         self.pdf = RelatorioPDF(self.logger)
+        
+        self.interface.register_callbacks(
+            self.on_generate_report, 
+            self.on_query_report, 
+            self.on_export_report
+        )
     
-    def on_generate_report(self, config):
+    def on_query_report(self, start:str, end:str) -> List[pd.DataFrame]:
+        self.logger.info(f'Consultando relatórios de {start} a {end}')
+        return self.db.get_dataframes_list(start, end)
+    
+    def on_export_report(self, df: pd.DataFrame):
+        df_pdf = df.drop(['trilho','valvula','temperatura','pressao', 'id', 'camara'], axis=1)
+        df_pdf = df_pdf[['data', 'hora', 'usuario', 'evento']]
+        try:
+            self.pdf.gerar_pdf(df_pdf)
+            self.logger.info(f'PDF exportado com sucesso.')
+            print(f'PDF exportado com sucesso.')
+
+        except Exception as e:
+            self.logger.error(f'Erro ao exportar dados para PDF: {e}.')
+            print(f'Erro ao exportar dados para PDF: {e}.')
+            
+    def on_generate_report(self, config: HeaderData):
         try:
             generator = DataGenerator(
                 config.receita, 
@@ -38,27 +63,17 @@ class Application:
         except Exception as e:
             self.logger.error(f'Erro ao salvar os dados do relatório no banco de dados: {e}.')
             print(f'Erro ao salvar os dados do relatório no banco de dados: {e}.')
-            
-        
-        df = self.db.get_database(config.data)
-        df_pdf = df.drop(['trilho','valvula','temperatura','pressao', 'id', 'camara'], axis=1)
-        df_pdf = df_pdf[['data', 'hora', 'usuario', 'evento']]
-        try:
-            self.pdf.gerar_pdf(df_pdf)
-            self.logger.info(f'PDF exportado com sucesso.')
-            print(f'PDF exportado com sucesso.')
 
-        except Exception as e:
-            self.logger.error(f'Erro ao exportar dados para PDF: {e}.')
-            print(f'Erro ao exportar dados para PDF: {e}.')
             
         
 
 if __name__ == '__main__':
+    log = ErrorLogging()
+    logger = log.setup_logging()
     try:
         app = Application()
         app.interface.mainloop()
     
     except Exception as e:
         print(f'Erro ao rodar o app: {e}')
-        app.logger.critical(f'Erro ao rodar o app: {e}')
+        logger.critical(f'Erro ao rodar o app: {e}')

@@ -1,5 +1,6 @@
 import sqlite3
 import pandas as pd
+from typing import List
 from path_manager import PathManager
 
 class Database:
@@ -79,3 +80,31 @@ class Database:
         conn.close()
         df_filtered = df[df['data'] == date]
         return df_filtered
+
+    def get_dataframes_list(self, start_date:str, end_date:str) -> List[pd.DataFrame]:
+
+        query = f'''
+        SELECT * 
+        FROM dadosfreezer 
+        WHERE 
+            -- Converter data dd/mm/yyyy para YYYY-MM-DD para comparação
+            substr(data, 7, 4) || '-' || substr(data, 4, 2) || '-' || substr(data, 1, 2)
+            BETWEEN
+            substr(?, 7, 4) || '-' || substr(?, 4, 2) || '-' || substr(?, 1, 2)
+            AND
+            substr(?, 7, 4) || '-' || substr(?, 4, 2) || '-' || substr(?, 1, 2)
+        ORDER BY 
+            substr(data, 7, 4) || '-' || substr(data, 4, 2) || '-' || substr(data, 1, 2)
+        '''
+        
+        with sqlite3.connect(self.db_path) as conn:
+            df = pd.read_sql_query(
+                query,
+                conn,
+                params=(start_date, start_date, start_date, end_date, end_date, end_date)
+            )
+        grupos = df.groupby('timestamp')
+        
+        lista_df = [grupo for _, grupo in grupos]
+        
+        return lista_df
