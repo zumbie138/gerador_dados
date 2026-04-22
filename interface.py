@@ -8,6 +8,7 @@ import sys
 from contextlib import contextmanager
 from header_data import HeaderData
 import logging
+import re
 
 class LogManager:
     '''Gerenciador e centralizador de logs e redirecionamento'''
@@ -364,6 +365,16 @@ class ReportQueryPage(BasePage):
             widget.destroy()
         self.check_vars.clear()
         
+    def _get_row_text(self, row_text:str):
+        padrao_receita = r'(RECEITA \d{2})'
+        padrao_cam = r'(CAM\d{1,2})'
+        receita_match = re.search(padrao_receita, row_text)
+        cam_match = re.search(padrao_cam, row_text)
+        
+        receita = receita_match.group(1) if receita_match else None
+        cam = cam_match.group(1) if cam_match else None
+    
+        return receita, cam
         
     def _apply_checkbox(self):
         if not self.df_list:
@@ -378,10 +389,14 @@ class ReportQueryPage(BasePage):
         for i, df in enumerate(self.df_list):
             var = tk.BooleanVar()
             self.check_vars.append(var)
-            
+            first_row = df.iloc[0]
+            data = first_row['data']
+            hora = first_row['hora']
+            evento = first_row['evento']
+            receita, cam = self._get_row_text(evento)
             tk.Checkbutton(
                 self.checkboxes_frame,
-                text=f'DF {i}',
+                text=f'RELATÓRIO {i+1}: {cam} - {receita} - {data} - {hora}',
                 variable=var
             ).pack(anchor='w', pady=2)
             
